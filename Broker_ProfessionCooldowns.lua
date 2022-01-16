@@ -92,7 +92,6 @@ local function build_tooltip(self)
             end
 
             local class_name = icbat_bpc_character_class_name[qualified_char_name]
-            print(class_name)
             if class_name ~= nil then
                 local rgb = C_ClassColor.GetClassColor(class_name)
                 self:SetCellTextColor(self:GetLineCount(), 1, rgb.r, rgb.g, rgb.b, 1)
@@ -122,7 +121,7 @@ local LibQTip = LibStub('LibQTip-1.0')
 local ldb = LibStub:GetLibrary("LibDataBroker-1.1")
 local dataobj = ldb:NewDataObject(ADDON, {
     type = "data source",
-    text = "-"
+    text = "Profession Cooldowns"
 })
 
 local function OnRelease(self)
@@ -158,27 +157,27 @@ function dataobj:OnLeave()
 end
 
 local function set_label(self)
-    dataobj.text = "Profession Cooldowns"
-    local prof1, prof2 = GetProfessions()
+    local cooldowns_available = 0
+    local name, realm = UnitFullName("player")
+    local qualified_name = name .. "-" .. realm
 
-    -- local prof_name, prof_icon, _, _, numAbilities, offset = GetProfessionInfo(prof1)
+    for qualified_char_name, recipe_to_cd in pairs(icbat_bpc_cross_character_cache) do
+        if qualified_char_name == qualified_name then
+            for recipeID, stored_recipe in pairs(recipe_to_cd) do
+                local cooldown_finished_date = stored_recipe["cooldown_finished_date"]
 
-    -- -- print(prof_name, numAbilities, offset)
-    -- print(GetProfessionInfo(prof1))
-    -- print(GetProfessionInfo(prof2))
+                if cooldown_finished_date < time() then
+                    cooldowns_available = cooldowns_available + 1
+                end
+            end
+        end
+    end
 
-    -- local t = C_TradeSkillUI.GetAllRecipeIDs()
-    -- for _i, recipeID in pairs(t) do
-    --     local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipeID)
-    --     if recipe_info["learned"] then
-    --         print(recipe_info["name"])
-    --     end
-
-    --     -- for k, v in pairs(C_TradeSkillUI.GetRecipeInfo(recipeID)) do
-    --     --     print(k, v)
-    --     -- end
-    -- end
-
+    if cooldowns_available > 0 then
+        dataobj.text = cooldowns_available .. " cooldowns available!"
+    else
+        dataobj.text = "Profession Cooldowns"
+    end
 end
 
 -- invisible frame for updating/hooking events
