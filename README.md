@@ -6,7 +6,7 @@ A WoW Data Broker addon for tracking transmutes and similar profession cooldowns
 Get it on [WoW Interface](https://www.wowinterface.com/downloads/info26211-BrokerLootSpec.html), or use the [Cursebreaker tool](https://github.com/AcidWeb/CurseBreaker) (recommended)
 
 ## Changelog
-- Initial Release
+- Added class colors and duration colors
 
 ## Contributing
 

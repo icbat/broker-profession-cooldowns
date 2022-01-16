@@ -1,12 +1,14 @@
 -- TODO Need an easy way to manage the cache/reset a character
--- TODO color-code the character names for easier recognition
--- TODO color-code the time remaining cells
 ------------------------------
 --- Initialize Saved Variables
 ------------------------------
 if icbat_bpc_cross_character_cache == nil then
     -- char name -> recipe w/cooldown ID -> recipe_name, cooldown_finished_date
     icbat_bpc_cross_character_cache = {}
+end
+if icbat_bpc_character_class_name == nil then
+    -- char name -> class name
+    icbat_bpc_character_class_name = {}
 end
 
 -----------------------
@@ -15,10 +17,11 @@ end
 
 local function add_recipe_to_cache(recipeID)
     local seconds_left_on_cd, has_cooldown = C_TradeSkillUI.GetRecipeCooldown(recipeID)
+    local name, realm = UnitFullName("player")
+    local qualified_name = name .. "-" .. realm
+
     if has_cooldown then
         local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipeID)
-        local name, realm = UnitFullName("player")
-        local qualified_name = name .. "-" .. realm
 
         if seconds_left_on_cd == nil then
             seconds_left_on_cd = -1
@@ -39,6 +42,9 @@ local function add_recipe_to_cache(recipeID)
         -- end
         icbat_bpc_cross_character_cache[qualified_name][recipeID] = recipe_to_store
     end
+
+    local _localized, canonical_class_name = UnitClass("player")
+    icbat_bpc_character_class_name[qualified_name] = canonical_class_name
 end
 
 local function scan_for_recipes()
@@ -78,6 +84,19 @@ local function build_tooltip(self)
 
             end
             local line = self:AddLine(Ambiguate(qualified_char_name, "all"), recipe_name, ready)
+
+            if cooldown_finished_date > time() then
+                self:SetCellTextColor(self:GetLineCount(), 3, 1, 0.5, 0, 1)
+            else
+                self:SetCellTextColor(self:GetLineCount(), 3, 0, 1, 0, 1)
+            end
+
+            local class_name = icbat_bpc_character_class_name[qualified_char_name]
+            print(class_name)
+            if class_name ~= nil then
+                local rgb = C_ClassColor.GetClassColor(class_name)
+                self:SetCellTextColor(self:GetLineCount(), 1, rgb.r, rgb.g, rgb.b, 1)
+            end
         end
     end
 
