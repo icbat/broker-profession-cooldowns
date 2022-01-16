@@ -1,18 +1,17 @@
 -- TODO Need an easy way to manage the cache/reset a character
 -- TODO color-code the character names for easier recognition
+-- TODO color-code the time remaining cells
 ------------------------------
 --- Initialize Saved Variables
 ------------------------------
--- if icbat_bpc_cross_character_cache == nil then
--- char name -> recipe w/cooldown ID -> recipe_name, cooldown_finished_date
-icbat_bpc_cross_character_cache = {}
--- end
+if icbat_bpc_cross_character_cache == nil then
+    -- char name -> recipe w/cooldown ID -> recipe_name, cooldown_finished_date
+    icbat_bpc_cross_character_cache = {}
+end
 
 -----------------------
 --- Tim Allen Grunt.wav
 -----------------------
-
--- TODO add a lightweight handler specifically for event NEW_RECIPE_LEARNED: recipeID, recipeLevel, baseRecipeID
 
 local function add_recipe_to_cache(recipeID)
     local seconds_left_on_cd, has_cooldown = C_TradeSkillUI.GetRecipeCooldown(recipeID)
@@ -39,13 +38,10 @@ local function add_recipe_to_cache(recipeID)
         -- else
         -- end
         icbat_bpc_cross_character_cache[qualified_name][recipeID] = recipe_to_store
-
-        print("added", recipe_info["name"])
     end
 end
 
 local function scan_for_recipes()
-    print("Scanning")
     local recipes_in_open_profession = C_TradeSkillUI.GetAllRecipeIDs()
 
     local known_recipes = {}
@@ -173,8 +169,5 @@ f:SetScript("OnEvent", set_label)
 
 local g = CreateFrame("frame")
 g:RegisterEvent("TRADE_SKILL_CLOSE")
+g:RegisterEvent("NEW_RECIPE_LEARNED")
 g:SetScript("OnEvent", scan_for_recipes)
-
-local h = CreateFrame("frame")
-h:RegisterEvent("NEW_RECIPE_LEARNED")
-h:SetScript("OnEvent", add_recipe_to_cache)
