@@ -35,7 +35,7 @@ jobs:
 
     - name: Parse WoW Addon Verions
       id: get_versions
-      uses: icbat/parse-wow-addon-version@v1.0.1
+      uses: icbat/parse-wow-addon-version@v1.1.0
       with:
         tocfile: ${{ env.ADDON_NAME }}.toc
 
@@ -66,6 +66,6 @@ jobs:
       with:
         id: ${{ env.WOWI_ID }}
         zipFilePath: ${{ env.ADDON_NAME }}.zip
-        compatible: ${{ steps.get_versions.outputs.supported_version }}
+        compatible: ${{ steps.get_versions.outputs.supported_version_semantic }}
         version: ${{ steps.get_versions.outputs.addon_version }}
         apiKey: ${{ secrets.WOW_INTERFACE }}
