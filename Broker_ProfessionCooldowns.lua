@@ -67,6 +67,33 @@ local function scan_for_recipes()
     end
 end
 
+local function flatten_table(cache_table)
+    local output = {}
+    local index = 1
+    for qualified_char_name, recipe_to_cd in pairs(cache_table) do
+        for recipe_id, stored_recipe in pairs(recipe_to_cd) do
+            local cooldown_finished_date = stored_recipe["cooldown_finished_date"]
+            local recipe_name = stored_recipe["recipe_name"]
+
+            output[index] = {
+                qualified_char_name = qualified_char_name,
+                recipe_id = recipe_id,
+                cooldown_finished_date = cooldown_finished_date,
+                recipe_name = recipe_name
+            }
+            index = index + 1
+        end
+    end
+    table.sort(output, function(a, b)
+        if a["qualified_char_name"] ~= b["qualified_char_name"] then
+            return a["qualified_char_name"] < b["qualified_char_name"]
+        end
+
+        return a["recipe_name"] < b["recipe_name"]
+    end)
+    return output
+end
+
 -------------
 --- View Code
 -------------
@@ -74,42 +101,50 @@ local function build_tooltip(self)
     self:AddHeader("") -- filled in later w/ colspan
     self:AddSeparator()
 
-    for qualified_char_name, recipe_to_cd in pairs(icbat_bpc_cross_character_cache) do
-        for recipeID, stored_recipe in pairs(recipe_to_cd) do
-            local cooldown_finished_date = stored_recipe["cooldown_finished_date"]
-            local recipe_name = stored_recipe["recipe_name"]
+    local table = flatten_table(icbat_bpc_cross_character_cache)
 
-            local ready = "Ready"
-            if cooldown_finished_date > time() then
-                local hours = (cooldown_finished_date - time()) / 3600
-                if hours >= 1 then
-                    ready = math.ceil(hours) .. " hours"
-                else
-                    local minutes = (cooldown_finished_date - time()) / 60
-                    ready = math.ceil(minutes) .. " minutes"
-                end
+    for i, table_entry in ipairs(table) do
+        local qualified_char_name = table_entry["qualified_char_name"]
+        local cooldown_finished_date = table_entry["cooldown_finished_date"]
+        local recipe_name = table_entry["recipe_name"]
+        local recipe_id = table_entry["recipe_id"]
 
-            end
-            local line = self:AddLine(Ambiguate(qualified_char_name, "all"), recipe_name, ready)
-
-            if cooldown_finished_date > time() then
-                self:SetCellTextColor(self:GetLineCount(), 3, 1, 0.5, 0, 1)
+        local ready = "Ready"
+        if cooldown_finished_date > time() then
+            local hours = (cooldown_finished_date - time()) / 3600
+            if hours >= 1 then
+                ready = math.ceil(hours) .. " hours"
             else
-                self:SetCellTextColor(self:GetLineCount(), 3, 0, 1, 0, 1)
+                local minutes = (cooldown_finished_date - time()) / 60
+                ready = math.ceil(minutes) .. " minutes"
             end
 
-            local class_name = icbat_bpc_character_class_name[qualified_char_name]
-            if class_name ~= nil then
-                local rgb = C_ClassColor.GetClassColor(class_name)
-                self:SetCellTextColor(self:GetLineCount(), 1, rgb.r, rgb.g, rgb.b, 1)
-            end
-
-            local function drop_from_cache(a, b, c, d, e)
-                icbat_bpc_cross_character_cache[qualified_char_name][recipeID] = nil
-            end
-
-            self:SetLineScript(self:GetLineCount(), "OnMouseUp", drop_from_cache)
         end
+        local line = self:AddLine(Ambiguate(qualified_char_name, "all"), recipe_name, ready)
+
+        if cooldown_finished_date > time() then
+            self:SetCellTextColor(self:GetLineCount(), 3, 1, 0.5, 0, 1)
+        else
+            self:SetCellTextColor(self:GetLineCount(), 3, 0, 1, 0, 1)
+        end
+
+        local class_name = icbat_bpc_character_class_name[qualified_char_name]
+        if class_name ~= nil then
+            local rgb = C_ClassColor.GetClassColor(class_name)
+            self:SetCellTextColor(self:GetLineCount(), 1, rgb.r, rgb.g, rgb.b, 1)
+        end
+
+        local function drop_from_cache()
+            print(qualified_char_name, recipe_id)
+            icbat_bpc_cross_character_cache[qualified_char_name][recipe_id] = nil
+            for char, recipe_table in pairs(icbat_bpc_cross_character_cache) do
+                for recipe_id, info in pairs(recipe_table) do
+                    print(char, recipe_id, info)
+                end
+            end
+        end
+
+        self:SetLineScript(self:GetLineCount(), "OnMouseUp", drop_from_cache)
     end
 
     self:AddSeparator()
