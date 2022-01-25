@@ -1,3 +1,9 @@
+local ignored_spell_ids = {169080 -- gearspring parts
+, 177054 -- secrets of draenor engineering
+, 175880 -- secrets of draenor alchemy
+, 156587 -- alchemical catalyst
+}
+
 ------------------------------
 --- Initialize Saved Variables
 ------------------------------
@@ -15,6 +21,12 @@ end
 -----------------------
 
 local function add_recipe_to_cache(recipeID)
+    for i, ignored_spell_id in ipairs(ignored_spell_ids) do
+        if ignored_spell_id == recipeID then
+            return
+        end
+    end
+
     local seconds_left_on_cd, has_cooldown = C_TradeSkillUI.GetRecipeCooldown(recipeID)
     local name, realm = UnitFullName("player")
     local qualified_name = name .. "-" .. realm
@@ -92,7 +104,7 @@ local function build_tooltip(self)
                 self:SetCellTextColor(self:GetLineCount(), 1, rgb.r, rgb.g, rgb.b, 1)
             end
 
-            local function drop_from_cache()
+            local function drop_from_cache(a, b, c, d, e)
                 icbat_bpc_cross_character_cache[qualified_char_name][recipeID] = nil
             end
 
@@ -108,6 +120,10 @@ local function build_tooltip(self)
     self:SetCell(1, 1, "Profession Cooldowns", nil, "CENTER", 3)
     self:SetCell(self:GetLineCount() - 1, 1, "To scan for more cooldowns,", nil, "CENTER", 3)
     self:SetCell(self:GetLineCount(), 1, "open and close the profession skills on your characters", nil, "CENTER", 3)
+
+    self:AddLine("") -- spacer
+    self:AddLine("") -- filled in later w/ colspan
+    self:SetCell(self:GetLineCount(), 1, "Clicking lines will remove it until re-added", nil, "CENTER", 3)
 
     -- self:SetLineTextColor(self:GetLineCount(), 1, 1, 1, 0.5)
 
