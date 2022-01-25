@@ -1,4 +1,3 @@
--- TODO Need an easy way to manage the cache/reset a character
 ------------------------------
 --- Initialize Saved Variables
 ------------------------------
@@ -36,10 +35,6 @@ local function add_recipe_to_cache(recipeID)
             icbat_bpc_cross_character_cache[qualified_name] = {}
         end
 
-        -- if seconds_left_on_cd ~= nil then
-        --     icbat_bpc_cross_character_cache[qualified_name][recipeID] = seconds_left_on_cd + time()
-        -- else
-        -- end
         icbat_bpc_cross_character_cache[qualified_name][recipeID] = recipe_to_store
     end
 
@@ -96,6 +91,12 @@ local function build_tooltip(self)
                 local rgb = C_ClassColor.GetClassColor(class_name)
                 self:SetCellTextColor(self:GetLineCount(), 1, rgb.r, rgb.g, rgb.b, 1)
             end
+
+            local function drop_from_cache()
+                icbat_bpc_cross_character_cache[qualified_char_name][recipeID] = nil
+            end
+
+            self:SetLineScript(self:GetLineCount(), "OnMouseUp", drop_from_cache)
         end
     end
 
