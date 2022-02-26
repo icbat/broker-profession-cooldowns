@@ -24,7 +24,7 @@ local function should_track_recipe(recipe_id)
     local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipe_id)
     if not recipe_info["learned"] then
         return false
-        end
+    end
 
     local _seconds_remaining, has_cooldown = C_TradeSkillUI.GetRecipeCooldown(recipe_id)
     if not has_cooldown then
@@ -37,38 +37,67 @@ local function should_track_recipe(recipe_id)
         end
     end
 
-    print("Should track", recipe_id)
     return true
 end
 
-local function add_recipe_to_cache(recipeID)
+local function get_profession_skill_line()
+    local line_id, _name, _, _, _, parent_line_id, parent_name = C_TradeSkillUI.GetTradeSkillLine()
+    if parent_line_id ~= nil then
+        return parent_line_id
+    end
 
-    local seconds_left_on_cd, has_cooldown = C_TradeSkillUI.GetRecipeCooldown(recipeID)
+    return line_id
+end
+
+local function get_qualified_name()
     local name, realm = UnitFullName("player")
     local qualified_name = name .. "-" .. realm
+    return qualified_name
+end
 
-        local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipeID)
+local function add_recipe_to_cache(recipe_id)
+    local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipe_id)
+    local seconds_left_on_cd = C_TradeSkillUI.GetRecipeCooldown(recipe_id)
+    local qualified_name = get_qualified_name()
 
-        if seconds_left_on_cd == nil then
-            seconds_left_on_cd = -1
-        end
+    if seconds_left_on_cd == nil then
+        seconds_left_on_cd = -1
+    end
 
-        local recipe_to_store = {
-            recipe_name = recipe_info["name"],
-            cooldown_finished_date = seconds_left_on_cd + time()
-        }
+    local recipe_to_store = {
+        recipe_id = recipe_id,
+        recipe_name = recipe_info["name"],
+        cooldown_finished_date = seconds_left_on_cd + time(),
+        profession_id = get_profession_skill_line()
+    }
 
-        if icbat_bpc_cross_character_cache[qualified_name] == nil then
-            icbat_bpc_cross_character_cache[qualified_name] = {}
-        end
+    if icbat_bpc_cross_character_cache[qualified_name] == nil then
+        icbat_bpc_cross_character_cache[qualified_name] = {}
+    end
 
-        icbat_bpc_cross_character_cache[qualified_name][recipeID] = recipe_to_store
+    icbat_bpc_cross_character_cache[qualified_name][recipe_id] = recipe_to_store
 
     local _localized, canonical_class_name = UnitClass("player")
     icbat_bpc_character_class_name[qualified_name] = canonical_class_name
 end
 
+local function clear_profession_cache(qualified_name, profession_id)
+    if icbat_bpc_cross_character_cache[qualified_name] == nil then
+        return
+    end
+
+    print("clearing stuff: ", qualified_name, profession_id)
+    for recipe_id, recipe_info in pairs(icbat_bpc_cross_character_cache[qualified_name]) do
+        if recipe_info["profession_id"] == nil then
+            icbat_bpc_cross_character_cache[qualified_name][recipe_id] = nil
+        elseif recipe_info["profession_id"] == profession_id then
+            icbat_bpc_cross_character_cache[qualified_name][recipe_id] = nil
+        end
+    end
+end
+
 local function scan_for_recipes()
+    clear_profession_cache(get_qualified_name(), get_profession_skill_line())
     local recipes_in_open_profession = C_TradeSkillUI.GetAllRecipeIDs()
 
     for _i, recipeID in pairs(recipes_in_open_profession) do
