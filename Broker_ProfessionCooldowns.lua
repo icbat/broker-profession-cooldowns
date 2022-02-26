@@ -85,7 +85,6 @@ local function add_recipe_to_cache(recipe_id)
 end
 
 local function clear_profession_cache(qualified_name, profession_id)
-    print("clearing stuff: ", qualified_name, profession_id)
     for i, recipe_info in pairs(icbat_bpc_cross_character_cache) do
         if recipe_info["qualified_char_name"] == nil then
             -- remove old-format entries
@@ -113,15 +112,6 @@ local function scan_for_recipes()
     end
 
     table.sort(icbat_bpc_cross_character_cache, function(a, b)
-        if b == nil then
-            return 1
-        end
-        for k, v in pairs(a) do
-            print("a", k, v)
-        end
-        for k, v in pairs(b) do
-            print("b", k, v)
-        end
         if a["qualified_char_name"] ~= b["qualified_char_name"] then
             return a["qualified_char_name"] < b["qualified_char_name"]
         end
@@ -136,7 +126,6 @@ local function update_cooldown(_, _event, unit, _cast_guid, spell_id)
     end
 
     if should_track_recipe(spell_id) then
-        print("update via other hook")
         add_recipe_to_cache(spell_id)
     end
 end
