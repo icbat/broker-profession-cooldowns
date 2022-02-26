@@ -20,18 +20,33 @@ end
 --- Tim Allen Grunt.wav
 -----------------------
 
-local function add_recipe_to_cache(recipeID)
-    for i, ignored_spell_id in ipairs(ignored_spell_ids) do
-        if ignored_spell_id == recipeID then
-            return
+local function should_track_recipe(recipe_id)
+    local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipe_id)
+    if not recipe_info["learned"] then
+        return false
+        end
+
+    local _seconds_remaining, has_cooldown = C_TradeSkillUI.GetRecipeCooldown(recipe_id)
+    if not has_cooldown then
+        return false
+    end
+
+    for _i, ignored_spell_id in ipairs(ignored_spell_ids) do
+        if ignored_spell_id == recipe_id then
+            return false
         end
     end
+
+    print("Should track", recipe_id)
+    return true
+end
+
+local function add_recipe_to_cache(recipeID)
 
     local seconds_left_on_cd, has_cooldown = C_TradeSkillUI.GetRecipeCooldown(recipeID)
     local name, realm = UnitFullName("player")
     local qualified_name = name .. "-" .. realm
 
-    if has_cooldown then
         local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipeID)
 
         if seconds_left_on_cd == nil then
@@ -48,7 +63,6 @@ local function add_recipe_to_cache(recipeID)
         end
 
         icbat_bpc_cross_character_cache[qualified_name][recipeID] = recipe_to_store
-    end
 
     local _localized, canonical_class_name = UnitClass("player")
     icbat_bpc_character_class_name[qualified_name] = canonical_class_name
@@ -57,11 +71,10 @@ end
 local function scan_for_recipes()
     local recipes_in_open_profession = C_TradeSkillUI.GetAllRecipeIDs()
 
-    local known_recipes = {}
     for _i, recipeID in pairs(recipes_in_open_profession) do
         local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipeID)
 
-        if recipe_info["learned"] then
+        if should_track_recipe(recipeID) then
             add_recipe_to_cache(recipeID)
         end
     end
@@ -202,7 +215,7 @@ local function coloredText(text, color, is_eligible)
     return "\124c" .. color .. text .. "\124r"
 end
 
-local function set_label(self)
+local function set_label()
     local cooldowns_available = 0
     local name, realm = UnitFullName("player")
     local qualified_name = name .. "-" .. realm
@@ -232,6 +245,6 @@ f:RegisterEvent("PLAYER_ENTERING_WORLD") -- on login
 f:SetScript("OnEvent", set_label)
 
 local g = CreateFrame("frame")
-g:RegisterEvent("TRADE_SKILL_CLOSE")
+g:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
 g:RegisterEvent("NEW_RECIPE_LEARNED")
 g:SetScript("OnEvent", scan_for_recipes)
