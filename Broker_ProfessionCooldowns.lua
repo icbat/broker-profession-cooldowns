@@ -281,6 +281,9 @@ end
 -- invisible frame for updating/hooking events
 local f = CreateFrame("frame")
 f:RegisterEvent("PLAYER_ENTERING_WORLD") -- on login
+f:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
+f:RegisterEvent("NEW_RECIPE_LEARNED")
+f:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
 f:SetScript("OnEvent", set_label)
 
 local g = CreateFrame("frame")
