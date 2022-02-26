@@ -22,7 +22,7 @@ end
 
 local function should_track_recipe(recipe_id)
     local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipe_id)
-    if not recipe_info["learned"] then
+    if recipe_info == nil or not recipe_info["learned"] then
         return false
     end
 
@@ -56,6 +56,7 @@ local function get_qualified_name()
 end
 
 local function add_recipe_to_cache(recipe_id)
+    print("Caching recipe", recipe_id)
     local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipe_id)
     local seconds_left_on_cd = C_TradeSkillUI.GetRecipeCooldown(recipe_id)
     local qualified_name = get_qualified_name()
@@ -65,6 +66,7 @@ local function add_recipe_to_cache(recipe_id)
     end
 
     local recipe_to_store = {
+        qualified_char_name = qualified_name,
         recipe_id = recipe_id,
         recipe_name = recipe_info["name"],
         cooldown_finished_date = seconds_left_on_cd + time(),
@@ -136,6 +138,17 @@ local function flatten_table(cache_table)
     return output
 end
 
+local function update_cooldown(_, _event, unit, _cast_guid, spell_id)
+    if unit ~= "player" then
+        return
+    end
+
+    if should_track_recipe(spell_id) then
+        print("update via other hook")
+        add_recipe_to_cache(spell_id)
+    end
+end
+
 -------------
 --- View Code
 -------------
@@ -190,9 +203,6 @@ local function build_tooltip(self)
     self:AddLine("") -- spacer
     self:AddLine("") -- filled in later w/ colspan
     self:SetCell(self:GetLineCount(), 1, "Clicking lines will remove it until re-added", nil, "CENTER", 3)
-
-    -- self:SetLineTextColor(self:GetLineCount(), 1, 1, 1, 0.5)
-
 end
 
 --------------------
@@ -277,3 +287,7 @@ local g = CreateFrame("frame")
 g:RegisterEvent("TRADE_SKILL_LIST_UPDATE")
 g:RegisterEvent("NEW_RECIPE_LEARNED")
 g:SetScript("OnEvent", scan_for_recipes)
+
+local h = CreateFrame("frame")
+h:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+h:SetScript("OnEvent", update_cooldown)
