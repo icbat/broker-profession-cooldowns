@@ -8,7 +8,13 @@ local ignored_spell_ids = {169080 -- gearspring parts
 --- Initialize Saved Variables
 ------------------------------
 if icbat_bpc_cross_character_cache == nil then
-    -- char name -> recipe w/cooldown ID -> recipe_name, cooldown_finished_date
+    --    [ {
+    --         recipe_id,
+    --         recipe_name,
+    --         qualified_char_name,
+    --         cooldown_finished_date,
+    --         profession_id,
+    --     } ]
     icbat_bpc_cross_character_cache = {}
 end
 if icbat_bpc_character_class_name == nil then
@@ -56,7 +62,6 @@ local function get_qualified_name()
 end
 
 local function add_recipe_to_cache(recipe_id)
-    print("Caching recipe", recipe_id)
     local recipe_info = C_TradeSkillUI.GetRecipeInfo(recipe_id)
     local seconds_left_on_cd = C_TradeSkillUI.GetRecipeCooldown(recipe_id)
     local qualified_name = get_qualified_name()
@@ -66,34 +71,31 @@ local function add_recipe_to_cache(recipe_id)
     end
 
     local recipe_to_store = {
-        qualified_char_name = qualified_name,
         recipe_id = recipe_id,
         recipe_name = recipe_info["name"],
+        qualified_char_name = qualified_name,
         cooldown_finished_date = seconds_left_on_cd + time(),
         profession_id = get_profession_skill_line()
     }
 
-    if icbat_bpc_cross_character_cache[qualified_name] == nil then
-        icbat_bpc_cross_character_cache[qualified_name] = {}
-    end
-
-    icbat_bpc_cross_character_cache[qualified_name][recipe_id] = recipe_to_store
+    table.insert(icbat_bpc_cross_character_cache, recipe_to_store)
 
     local _localized, canonical_class_name = UnitClass("player")
     icbat_bpc_character_class_name[qualified_name] = canonical_class_name
 end
 
 local function clear_profession_cache(qualified_name, profession_id)
-    if icbat_bpc_cross_character_cache[qualified_name] == nil then
-        return
-    end
-
     print("clearing stuff: ", qualified_name, profession_id)
-    for recipe_id, recipe_info in pairs(icbat_bpc_cross_character_cache[qualified_name]) do
-        if recipe_info["profession_id"] == nil then
-            icbat_bpc_cross_character_cache[qualified_name][recipe_id] = nil
+    for i, recipe_info in pairs(icbat_bpc_cross_character_cache) do
+        if recipe_info["qualified_char_name"] == nil then
+            -- remove old-format entries
+            table.remove(icbat_bpc_cross_character_cache, i)
+        elseif recipe_info["profession_id"] == nil then
+            -- remove old-format entries
+            table.remove(icbat_bpc_cross_character_cache, i)
         elseif recipe_info["profession_id"] == profession_id then
-            icbat_bpc_cross_character_cache[qualified_name][recipe_id] = nil
+            -- empty this profession's entries so we can reload
+            table.remove(icbat_bpc_cross_character_cache, i)
         end
     end
 end
@@ -109,33 +111,23 @@ local function scan_for_recipes()
             add_recipe_to_cache(recipeID)
         end
     end
-end
 
-local function flatten_table(cache_table)
-    local output = {}
-    local index = 1
-    for qualified_char_name, recipe_to_cd in pairs(cache_table) do
-        for recipe_id, stored_recipe in pairs(recipe_to_cd) do
-            local cooldown_finished_date = stored_recipe["cooldown_finished_date"]
-            local recipe_name = stored_recipe["recipe_name"]
-
-            output[index] = {
-                qualified_char_name = qualified_char_name,
-                recipe_id = recipe_id,
-                cooldown_finished_date = cooldown_finished_date,
-                recipe_name = recipe_name
-            }
-            index = index + 1
+    table.sort(icbat_bpc_cross_character_cache, function(a, b)
+        if b == nil then
+            return 1
         end
-    end
-    table.sort(output, function(a, b)
+        for k, v in pairs(a) do
+            print("a", k, v)
+        end
+        for k, v in pairs(b) do
+            print("b", k, v)
+        end
         if a["qualified_char_name"] ~= b["qualified_char_name"] then
             return a["qualified_char_name"] < b["qualified_char_name"]
         end
 
         return a["recipe_name"] < b["recipe_name"]
     end)
-    return output
 end
 
 local function update_cooldown(_, _event, unit, _cast_guid, spell_id)
@@ -156,7 +148,7 @@ local function build_tooltip(self)
     self:AddHeader("") -- filled in later w/ colspan
     self:AddSeparator()
 
-    local table = flatten_table(icbat_bpc_cross_character_cache)
+    local table = icbat_bpc_cross_character_cache
 
     for i, table_entry in ipairs(table) do
         local qualified_char_name = table_entry["qualified_char_name"]
@@ -179,13 +171,7 @@ local function build_tooltip(self)
         end
 
         local function drop_from_cache()
-            print(qualified_char_name, recipe_id)
-            icbat_bpc_cross_character_cache[qualified_char_name][recipe_id] = nil
-            for char, recipe_table in pairs(icbat_bpc_cross_character_cache) do
-                for recipe_id, info in pairs(recipe_table) do
-                    print(char, recipe_id, info)
-                end
-            end
+            table.remove(icbat_bpc_cross_character_cache, i)
         end
 
         self:SetLineScript(self:GetLineCount(), "OnMouseUp", drop_from_cache)
@@ -256,8 +242,7 @@ end
 
 local function set_label()
     local cooldowns_available = 0
-    local name, realm = UnitFullName("player")
-    local qualified_name = name .. "-" .. realm
+    local qualified_name = get_qualified_name()
 
     for qualified_char_name, recipe_to_cd in pairs(icbat_bpc_cross_character_cache) do
         if qualified_char_name == qualified_name then
