@@ -109,22 +109,11 @@ local function build_tooltip(self)
         local recipe_name = table_entry["recipe_name"]
         local recipe_id = table_entry["recipe_id"]
 
-        local ready = "Ready"
         if cooldown_finished_date > time() then
-            local hours = (cooldown_finished_date - time()) / 3600
-            if hours >= 1 then
-                ready = math.ceil(hours) .. " hours"
-            else
-                local minutes = (cooldown_finished_date - time()) / 60
-                ready = math.ceil(minutes) .. " minutes"
-            end
-
-        end
-        local line = self:AddLine(Ambiguate(qualified_char_name, "all"), recipe_name, ready)
-
-        if cooldown_finished_date > time() then
+            self:AddLine(Ambiguate(qualified_char_name, "all"), recipe_name, "Cooling Down")
             self:SetCellTextColor(self:GetLineCount(), 3, 1, 0.5, 0, 1)
         else
+            self:AddLine(Ambiguate(qualified_char_name, "all"), recipe_name, "Ready")
             self:SetCellTextColor(self:GetLineCount(), 3, 0, 1, 0, 1)
         end
 
