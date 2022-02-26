@@ -208,6 +208,11 @@ end
 function dataobj:OnLeave()
 end
 
+local green = "0000ff00"
+local function coloredText(text, color, is_eligible)
+    return "\124c" .. color .. text .. "\124r"
+end
+
 local function set_label(self)
     local cooldowns_available = 0
     local name, realm = UnitFullName("player")
@@ -226,7 +231,7 @@ local function set_label(self)
     end
 
     if cooldowns_available > 0 then
-        dataobj.text = cooldowns_available .. " cooldowns available!"
+        dataobj.text = coloredText(cooldowns_available .. " cooldowns available!", green)
     else
         dataobj.text = "Profession Cooldowns"
     end
