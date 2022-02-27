@@ -78,24 +78,46 @@ local function add_recipe_to_cache(recipe_id)
         profession_id = get_profession_skill_line()
     }
 
-    table.insert(icbat_bpc_cross_character_cache, recipe_to_store)
-
     local _localized, canonical_class_name = UnitClass("player")
     icbat_bpc_character_class_name[qualified_name] = canonical_class_name
+    for i, stored_recipe in ipairs(icbat_bpc_cross_character_cache) do
+        if stored_recipe["recipe_id"] == recipe_id and stored_recipe["qualified_char_name"] == qualified_name then
+            print("Updating", recipe_to_store["recipe_name"])
+            icbat_bpc_cross_character_cache[i] = recipe_to_store
+            return
+        end
+    end
+
+    print("Inserting", recipe_to_store["recipe_name"])
+    table.insert(icbat_bpc_cross_character_cache, recipe_to_store)
+
+end
+
+local function clear_recipe(i, recipe_info, qualified_name, profession_id)
+    -- remove old-format entries
+    if recipe_info["qualified_char_name"] == nil then
+        table.remove(icbat_bpc_cross_character_cache, i)
+        return
+    elseif recipe_info["profession_id"] == nil then
+        table.remove(icbat_bpc_cross_character_cache, i)
+        return
+    end
+
+    -- if it's not for this character, leave it be
+    if recipe_info["qualified_char_name"] ~= qualified_name then
+        print("minding my own business")
+        return
+    end
+
+    -- empty this profession's entries so we can reload
+    if recipe_info["profession_id"] == profession_id then
+        table.remove(icbat_bpc_cross_character_cache, i)
+    end
 end
 
 local function clear_profession_cache(qualified_name, profession_id)
     for i, recipe_info in pairs(icbat_bpc_cross_character_cache) do
-        if recipe_info["qualified_char_name"] == nil then
-            -- remove old-format entries
-            table.remove(icbat_bpc_cross_character_cache, i)
-        elseif recipe_info["profession_id"] == nil then
-            -- remove old-format entries
-            table.remove(icbat_bpc_cross_character_cache, i)
-        elseif recipe_info["profession_id"] == profession_id then
-            -- empty this profession's entries so we can reload
-            table.remove(icbat_bpc_cross_character_cache, i)
-        end
+        clear_recipe(i, recipe_info, qualified_name, profession_id)
     end
 end
 
@@ -137,9 +159,7 @@ local function build_tooltip(self)
     self:AddHeader("") -- filled in later w/ colspan
     self:AddSeparator()
 
-    local table = icbat_bpc_cross_character_cache
-
-    for i, table_entry in ipairs(table) do
+    for i, table_entry in ipairs(icbat_bpc_cross_character_cache) do
         local qualified_char_name = table_entry["qualified_char_name"]
         local cooldown_finished_date = table_entry["cooldown_finished_date"]
         local recipe_name = table_entry["recipe_name"]
