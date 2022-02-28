@@ -82,13 +82,11 @@ local function add_recipe_to_cache(recipe_id)
     icbat_bpc_character_class_name[qualified_name] = canonical_class_name
     for i, stored_recipe in ipairs(icbat_bpc_cross_character_cache) do
         if stored_recipe["recipe_id"] == recipe_id and stored_recipe["qualified_char_name"] == qualified_name then
-            print("Updating", recipe_to_store["recipe_name"])
             icbat_bpc_cross_character_cache[i] = recipe_to_store
             return
         end
     end
 
-    print("Inserting", recipe_to_store["recipe_name"])
     table.insert(icbat_bpc_cross_character_cache, recipe_to_store)
 
 end
@@ -105,7 +103,6 @@ local function clear_recipe(i, recipe_info, qualified_name, profession_id)
 
     -- if it's not for this character, leave it be
     if recipe_info["qualified_char_name"] ~= qualified_name then
-        print("minding my own business")
         return
     end
 
