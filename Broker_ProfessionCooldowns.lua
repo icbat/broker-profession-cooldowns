@@ -119,6 +119,9 @@ local function clear_profession_cache(qualified_name, profession_id)
 end
 
 local function scan_for_recipes()
+    if C_TradeSkillUI.IsTradeSkillGuild() then
+        return
+    end
     clear_profession_cache(get_qualified_name(), get_profession_skill_line())
     local recipes_in_open_profession = C_TradeSkillUI.GetAllRecipeIDs()
 
