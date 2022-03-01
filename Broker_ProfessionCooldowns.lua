@@ -180,6 +180,7 @@ local function build_tooltip(self)
         end
 
         local function drop_from_cache()
+            self:Clear()
             table.remove(icbat_bpc_cross_character_cache, i)
         end
 
